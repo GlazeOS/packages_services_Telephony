@@ -93,6 +93,10 @@ abstract class TelephonyConnection extends Connection {
     private static final int MSG_ON_HOLD_TONE = 14;
     private static final int MSG_CDMA_VOICE_PRIVACY_ON = 15;
     private static final int MSG_CDMA_VOICE_PRIVACY_OFF = 16;
+    private static final int MSG_PHONE_VP_ON = 17;
+    private static final int MSG_PHONE_VP_OFF = 18;
+
+    private boolean mIsVoicePrivacyOn = false;
 
     private final Handler mHandler = new Handler() {
         @Override
@@ -178,6 +182,20 @@ abstract class TelephonyConnection extends Connection {
                     refreshConferenceSupported();
                     refreshDisableAddCall();
                     updateConnectionProperties();
+                    break;
+
+                case MSG_PHONE_VP_ON:
+                    if (!mIsVoicePrivacyOn) {
+                        mIsVoicePrivacyOn = true;
+                        updateState();
+                    }
+                    break;
+
+                case MSG_PHONE_VP_OFF:
+                    if (mIsVoicePrivacyOn) {
+                        mIsVoicePrivacyOn = false;
+                        updateState();
+                    }
                     break;
 
                 case MSG_SET_VIDEO_PROVIDER:
@@ -728,6 +746,7 @@ abstract class TelephonyConnection extends Connection {
         newCapabilities = changeBitmask(newCapabilities, CAPABILITY_CAN_PULL_CALL,
                 isExternalConnection() && isPullable());
         newCapabilities = applyConferenceTerminationCapabilities(newCapabilities);
+        newCapabilities = applyVoicePrivacyCapabilities(newCapabilities);
 
         if (getConnectionCapabilities() != newCapabilities) {
             setConnectionCapabilities(newCapabilities);
@@ -819,6 +838,8 @@ abstract class TelephonyConnection extends Connection {
         getPhone().registerForOnHoldTone(mHandler, MSG_ON_HOLD_TONE, null);
         getPhone().registerForInCallVoicePrivacyOn(mHandler, MSG_CDMA_VOICE_PRIVACY_ON, null);
         getPhone().registerForInCallVoicePrivacyOff(mHandler, MSG_CDMA_VOICE_PRIVACY_OFF, null);
+        getPhone().registerForInCallVoicePrivacyOn(mHandler, MSG_PHONE_VP_ON, null);
+        getPhone().registerForInCallVoicePrivacyOff(mHandler, MSG_PHONE_VP_OFF, null);
         mOriginalConnection.addPostDialListener(mPostDialListener);
         mOriginalConnection.addListener(mOriginalConnectionListener);
 
@@ -1449,6 +1470,23 @@ abstract class TelephonyConnection extends Connection {
         if (!mWasImsConnection) {
             currentCapabilities |= CAPABILITY_DISCONNECT_FROM_CONFERENCE;
             currentCapabilities |= CAPABILITY_SEPARATE_FROM_CONFERENCE;
+        }
+
+        return currentCapabilities;
+    }
+
+    /**
+     * Applies the voice privacy capabilities to the {@code CallCapabilities} bit-mask.
+     *
+     * @param callCapabilities The {@code CallCapabilities} bit-mask.
+     * @return The capabilities with the voice privacy capabilities applied.
+     */
+    private int applyVoicePrivacyCapabilities(int callCapabilities) {
+        int currentCapabilities = callCapabilities;
+        if (mIsVoicePrivacyOn) {
+            currentCapabilities |= CAPABILITY_VOICE_PRIVACY;
+        } else {
+            currentCapabilities &= ~CAPABILITY_VOICE_PRIVACY;
         }
 
         return currentCapabilities;
