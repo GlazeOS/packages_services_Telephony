@@ -1424,4 +1424,7 @@
     <string name="change_pin_succeeded">Voicemail PIN updated</string>
     <!-- The error message to show if the server reported an error while attempting to change the voicemail PIN -->
     <string name="change_pin_system_error">Unable to set PIN</string>
+
+    <string name="msim_mobile_network_settings_title">SIM %d mobile network settings</string>
+
 </resources>
