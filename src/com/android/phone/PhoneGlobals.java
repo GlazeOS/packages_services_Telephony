@@ -88,6 +88,7 @@ public class PhoneGlobals extends ContextWrapper {
     private static final boolean DBG =
             (PhoneGlobals.DBG_LEVEL >= 1) && (SystemProperties.getInt("ro.debuggable", 0) == 1);
     private static final boolean VDBG = (PhoneGlobals.DBG_LEVEL >= 2);
+    private static final String PROPERTY_AIRPLANE_MODE_ON = "persist.radio.airplane_mode_on";
 
     // Message codes; see mHandler below.
     private static final int EVENT_SIM_NETWORK_LOCKED = 3;
@@ -685,11 +686,14 @@ public class PhoneGlobals extends ContextWrapper {
             // emergency calls.  If there are, switch airplane mode back to off.
             if (PhoneUtils.isInEmergencyCall(mCM)) {
                 // Switch airplane mode back to off.
+                SystemProperties.set(PROPERTY_AIRPLANE_MODE_ON, "0");
                 ConnectivityManager.from(this).setAirplaneMode(false);
                 Toast.makeText(this, R.string.radio_off_during_emergency_call, Toast.LENGTH_LONG)
                         .show();
                 Log.i(LOG_TAG, "Ignoring airplane mode: emergency call. Turning airplane off");
             } else if (isCellOffInAirplaneMode(context)) {
+                Log.d(LOG_TAG, "Setting property " + PROPERTY_AIRPLANE_MODE_ON);
+                SystemProperties.set(PROPERTY_AIRPLANE_MODE_ON, "1");
                 setRadioPowerOff(context);
             } else {
                 Log.i(LOG_TAG, "Ignoring airplane mode: settings prevent cell radio power off");
@@ -699,6 +703,7 @@ public class PhoneGlobals extends ContextWrapper {
 
     private void maybeTurnCellOn(Context context, boolean isAirplaneNewlyOn) {
         if (!isAirplaneNewlyOn) {
+            SystemProperties.set(PROPERTY_AIRPLANE_MODE_ON, "0");
             setRadioPowerOn(context);
         }
     }
